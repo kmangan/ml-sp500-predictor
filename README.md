@@ -45,4 +45,10 @@ brew install libomp
 python app.py
 ```
 
+## TODO - Next steps
 
+We can probably improve accuracy by applying further techniques:
+
+- Feature engineering (e.g. moving averages / trends)
+- Optimise XGBoost with some hyperparameter tuning
+- Stack models! (e.g add Random forest or Logistic regression)
