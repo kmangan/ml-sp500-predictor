@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV, TimeSeriesSplit
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from xgboost import XGBClassifier
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ def load_data():
 def evaluate_features(stock_df, features):
     X = stock_df[features]
     y = stock_df['sp500_up']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
     model = XGBClassifier(eval_metric='logloss')
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
@@ -39,6 +39,41 @@ def test_best_feature_combination():
     
     print(f"Best feature combination: {best_features} with Accuracy: {best_score}")
 
+# Pytest method to perform Grid Search for hyperparameter tuning
+# Warning! This does take some time to run. You can reduce the param_grid to make it faster
+def test_hyperparameter_tuning():
+    stock_df = load_data()
+    best_features = ['joblessness', 'vix', 'epu', 'us3m', 'prev_day']
+    X = stock_df[best_features]
+    y = stock_df['sp500_up']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+
+    # Reduce these params to reduce test runtime
+    param_grid = {
+        'max_depth': [5, 6, 7],
+        'learning_rate': [0.05, 0.1, 0.3],
+        'n_estimators': [100, 300, 500],
+        'subsample': [0.8, 1.0],
+        'colsample_bytree': [0.8, 1.0],
+        'gamma': [0, 0.1, 0.5],
+        'reg_alpha': [0, 0.1, 0.5],
+        'reg_lambda': [1, 1.5, 2]
+    }
+
+    model = XGBClassifier(eval_metric='logloss')
+    tscv = TimeSeriesSplit(n_splits=3)
+    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, 
+                               scoring='accuracy', cv=tscv, verbose=2, n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
+    best_accuracy = accuracy_score(y_test, y_pred)
+
+    print("Best Hyperparameters:")
+    print(grid_search.best_params_)
+    print(f"Accuracy with best hyperparameters: {best_accuracy}")
+
 # Main method runs XGBoost with the best feature set
 def main():
     stock_df = load_data()
@@ -47,8 +82,18 @@ def main():
     y = stock_df['sp500_up']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
-    # Train the model with the best features
-    model = XGBClassifier(eval_metric='logloss')
+    # Train the model with optimized hyperparameters
+    model = XGBClassifier(
+        eval_metric='logloss',
+        colsample_bytree=1.0,
+        gamma=0,
+        learning_rate=0.3,
+        max_depth=7,
+        n_estimators=500,
+        reg_alpha=0,
+        reg_lambda=2,
+        subsample=0.8
+    )
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 

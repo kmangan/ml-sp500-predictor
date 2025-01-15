@@ -26,6 +26,11 @@ The above features are therefore used by the main method. I also found that a `t
 I also tried to apply a class weighting to help the model more accurately predict the minority case (down days), but didnt' make
 a significant difference.
 
+### Hyperparameter tuning
+
+With default values, we get an accuracy of 0.595. I wrote a `test_hyperparameter_tuning()` to evaluate the model with a range of hyperparameters,
+using `GridSearchCV`. The best parameter set brought up the accuracy to 0.606.
+
 ## Running the model
 
 Ensure dependencies are installed:
@@ -50,5 +55,4 @@ python app.py
 We can probably improve accuracy by applying further techniques:
 
 - Feature engineering (e.g. moving averages / trends)
-- Optimise XGBoost with some hyperparameter tuning
 - Stack models! (e.g add Random forest or Logistic regression)
